@@ -1,0 +1,65 @@
+# .github/workflows/accessibility.yml
+# This workflow runs accessibility checks with Pa11y and sends the report to n8n for MongoDB storage and Slack notifications.
+
+name: Accessibility Scan & Report to MongoDB
+
+on:
+  push:
+    branches:
+      - main # Trigger on pushes to the main branch
+  pull_request:
+    branches:
+      - main # Trigger on pull requests targeting the main branch
+  schedule:
+    - cron: '0 0 * * *' # Trigger daily at midnight UTC (e.g., for nightly scans)
+  workflow_dispatch: # Allows manual triggering from the GitHub Actions tab
+
+env:
+  # The URL of your product/website that Pa11y will scan.
+  # IMPORTANT: Replace "https://your-product-url.com" with a real, public URL.
+  PALLY_URL_TO_SCAN: "https://example.com" # Example, change this!
+
+  # The webhook URL for your n8n workflow that will RECEIVE the Pa11y report.
+  # This will be an ngrok URL when running n8n locally.
+  # IMPORTANT: You will update this after setting up n8n and ngrok.
+  N8N_WEBHOOK_URL_RECEIVE: "https://your-ngrok-url/webhook/receive-accessibility-report" # Placeholder for now
+
+jobs:
+  accessibility-scan:
+    runs-on: ubuntu-latest # The type of virtual machine to run the job on
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4 # Action to clone your repository code
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4 # Action to set up Node.js environment
+        with:
+          node-version: '18' # Specify Node.js version 18
+
+      - name: Install Node.js dependencies
+        run: |
+          npm install # Installs dependencies from package.json (including pa11y)
+
+      - name: Run Pa11y scan and save JSON
+        id: run_pa11y # Assign an ID to this step to reference its outputs (if any)
+        run: node pa11y-wrapper.js "${{ env.PALLY_URL_TO_SCAN }}" > pa11y-results.json
+        # Executes your Node.js wrapper, passing the target URL.
+        # The JSON output from pa11y-wrapper.js is redirected to 'pa11y-results.json'.
+
+      - name: Upload Pa11y raw JSON as artifact (optional)
+        uses: actions/upload-artifact@v4 # Action to save artifacts from the workflow run
+        with:
+          name: pa11y-raw-json
+          path: pa11y-results.json
+          retention-days: 7 # How long to keep this artifact (for debugging/history)
+
+      - name: Send Pa11y JSON report to n8n
+        run: |
+          curl -X POST \
+          -H "Content-Type: application/json" \
+          --data-binary @pa11y-results.json \
+          "${{ env.N8N_WEBHOOK_URL_RECEIVE }}"
+        # Uses curl to send the content of 'pa11y-results.json' as a POST request
+        # with JSON content type to your n8n webhook URL.
+        # The '@' prefix makes curl read the data from the file.
