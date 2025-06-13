@@ -1,0 +1,20 @@
+{
+  "name": "accessibility-scanner",
+  "version": "1.0.0",
+  "description": "Node.js wrapper for Pa11y accessibility scanning.",
+  "main": "pa11y-wrapper.js",
+  "scripts": {
+    "start": "node pa11y-wrapper.js"
+  },
+  "keywords": [
+    "pa11y",
+    "accessibility",
+    "a11y",
+    "automation"
+  ],
+  "author": "Your Name",
+  "license": "ISC",
+  "dependencies": {
+    "pa11y": "^6.2.3"
+  }
+}
