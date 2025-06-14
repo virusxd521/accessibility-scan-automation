@@ -22,7 +22,7 @@ env:
   # The webhook URL for your n8n workflow that will RECEIVE the Pa11y report.
   # This will be an ngrok URL when running n8n locally.
   # IMPORTANT: You will update this after setting up n8n and ngrok.
-  N8N_WEBHOOK_URL_RECEIVE: "https://27d8-2a00-a041-e569-1e00-39c3-4ce-f816-d51c.ngrok-free.app/webhook-test/read-accessibility-reports" # Placeholder for now
+  N8N_WEBHOOK_URL_RECEIVE: "http://localhost:5678/webhook/read-accessibility-reports" # Placeholder for now
 
 jobs:
   accessibility-scan:
@@ -59,7 +59,7 @@ jobs:
           curl -X POST \
           -H "Content-Type: application/json" \
           --data-binary @pa11y-results.json \
-          "https://27d8-2a00-a041-e569-1e00-39c3-4ce-f816-d51c.ngrok-free.app/webhook/receive-accessibility-report"
+          "http://localhost:5678/webhook/receive-accessibility-report"
         # Uses curl to send the content of 'pa11y-results.json' as a POST request
         # with JSON content type to your n8n webhook URL.
         # The '@' prefix makes curl read the data from the file.
