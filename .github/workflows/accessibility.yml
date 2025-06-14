@@ -43,7 +43,7 @@ jobs:
 
       - name: Run Pa11y scan and save JSON
         id: run_pa11y # Assign an ID to this step to reference its outputs (if any)
-        run: node pa11y-wrapper.js "${{ env.PALLY_URL_TO_SCAN }}" > pa11y-results.json
+        run: node pa11y-wrapper.js "https://broken-workshop.dequelabs.com" > pa11y-results.json
         # Executes your Node.js wrapper, passing the target URL.
         # The JSON output from pa11y-wrapper.js is redirected to 'pa11y-results.json'.
 
