@@ -59,7 +59,7 @@ jobs:
           curl -X POST \
           -H "Content-Type: application/json" \
           --data-binary @pa11y-results.json \
-          "${{ env.N8N_WEBHOOK_URL_RECEIVE }}"
+          "https://your-ngrok-url/webhook/receive-accessibility-report"
         # Uses curl to send the content of 'pa11y-results.json' as a POST request
         # with JSON content type to your n8n webhook URL.
         # The '@' prefix makes curl read the data from the file.
