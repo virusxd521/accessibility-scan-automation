@@ -1,0 +1,93 @@
+{
+  "documentTitle": "Advanced Dashboard View",
+  "documentUrl": "http://localhost:8080/dashboard-metrics",
+  "pageUrl": "http://localhost:8080/dashboard-metrics",
+  "issues": [
+    {
+      "code": "WCAG2AA.Principle1.4.3",
+      "type": "error",
+      "message": "Insufficient color contrast (minimum 4.5:1)",
+      "context": "<div class=\"header\" style=\"background-color:#F00; color:#FFF;\">Dashboard Title</div>",
+      "selector": "html > body > div:nth-child(1) > div:nth-child(1)",
+      "runner": "axe",
+      "runnerExtras": {
+        "impact": "critical",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.4/color-contrast"
+      }
+    },
+    {
+      "code": "WCAG2AA.Principle2.4.7",
+      "type": "error",
+      "message": "Focusable element has no keyboard accessible name.",
+      "context": "<button class=\"icon-button\"><span class=\"material-icons\">search</span></button>",
+      "selector": "html > body > div:nth-child(2) > button:nth-child(1)",
+      "runner": "axe",
+      "runnerExtras": {
+        "impact": "serious",
+        "helpUrl": "https://dequeuniversity.com/rules/axe/4.4/button-name"
+      }
+    },
+    {
+      "code": "WCAG2AA.Principle3.3.1",
+      "type": "warning",
+      "message": "Form field has no associated label.",
+      "context": "<input type=\"text\" class=\"search-input\" placeholder=\"Search...\" />",
+      "selector": "html > body > form > input:nth-child(1)",
+      "runner": "axe",
+      "runnerExtras": {
+        "impact": "moderate",
+        "suggestedFix": "Add a <label> tag or aria-label attribute."
+      }
+    },
+    {
+      "code": "WCAG2AA.Principle4.1.2",
+      "type": "error",
+      "message": "Element has a role of 'img' and an alt attribute, but the alt attribute is empty.",
+      "context": "<img src=\"logo.png\" alt=\"\" />",
+      "selector": "html > body > header > img",
+      "runner": "htmlcs"
+    },
+    {
+      "code": "WCAG2AA.Principle1.1.1",
+      "type": "notice",
+      "message": "Elements must have discernible text (All `<img>` elements must have an `alt` attribute that describes the image).",
+      "context": "<img src=\"advert.gif\">",
+      "selector": "html > body > div > img:nth-child(3)",
+      "runner": "axe"
+    },
+    {
+      "code": "WCAG2AA.Principle2.4.1",
+      "type": "warning",
+      "message": "Bypass blocks missing (e.g. skip links).",
+      "context": "<body>...</body>",
+      "selector": "html > body",
+      "runner": "htmlcs"
+    },
+    {
+      "code": "WCAG2AA.Principle3.2.2",
+      "type": "notice",
+      "message": "Changes of context (e.g., opening a new window) should be initiated by user request.",
+      "context": "<a href=\"external.html\" target=\"_blank\">External Link</a>",
+      "selector": "html > body > p > a:nth-child(1)",
+      "runner": "htmlcs"
+    },
+    {
+      "code": "WCAG2AA.Principle4.1.1",
+      "type": "error",
+      "message": "ID attribute value is not unique.",
+      "context": "<input type=\"text\" id=\"username\" />\n<input type=\"text\" id=\"username\" />",
+      "selector": "html > body > form > div > input#username",
+      "runner": "axe"
+    }
+  ],
+  "runners": [
+    {
+      "name": "htmlcs",
+      "version": "2.12.0"
+    },
+    {
+      "name": "axe",
+      "version": "4.4.1"
+    }
+  ]
+}
