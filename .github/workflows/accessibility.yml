@@ -1,8 +1,14 @@
+# .github/workflows/accessibility.yml
+# This workflow runs accessibility checks with Pa11y and sends the report to n8n for MongoDB storage and Slack notifications.
+
 name: Accessibility Scan & Report to MongoDB
 
 on:
+  # Allows triggering via API calls from external services (like n8n)
   repository_dispatch:
-    types: [trigger_pa11y_scan]
+    types: [trigger_pa11y_scan] # <--- THIS IS THE NEW TRIGGER TYPE. Must match event_type in n8n's GitHub node.
+
+  # Retaining existing triggers for flexibility (manual, push, pull_request, schedule)
   push:
     branches:
       - main # Trigger on pushes to the main branch
@@ -19,14 +25,9 @@ on:
         default: 'https://www.google.com' # Provide a default for manual runs
 
 env:
-  # The URL of your product/website that Pa11y will scan.
-  # It now dynamically uses the URL from repository_dispatch (client_payload) or workflow_dispatch (inputs).
-  # Fallback to a default if no URL is provided (e.g., from a push trigger).
-  PALLY_URL_TO_SCAN: ${{ github.event.client_payload.url || github.event.inputs.url || 'https://www.google.com' }} # <--- DYNAMIC URL HERE
-
-  # The webhook URL for your n8n workflow that will RECEIVE the Pa11y report (the 'ingestion' workflow).
-  # IMPORTANT: Replace with your current, active ngrok URL or deployed n8n URL.
-  N8N_WEBHOOK_URL_RECEIVE: "https://27d8-2a00-a041-e569-1e00-39c3-4ce-f816-d51c.ngrok-free.app/webhook/receive-accessibility-report" # <--- VERIFY THIS IS YOUR LATEST NGROK URL
+  # This top-level env variable will now only hold the N8N webhook URL.
+  # The PALLY_URL will be defined directly within the step below.
+  N8N_WEBHOOK_URL_RECEIVE: "https://27d8-2a00-a041-e569-1e00-39c3-4ce-f816-d51c.ngrok-free.app/webhook/receive-accessibility-report" # <--- VERIFY THIS IS YOUR LATEST NGROK URL FOR INGESTION
 
 jobs:
   accessibility-scan:
@@ -45,11 +46,20 @@ jobs:
         run: |
           npm install # Installs dependencies from package.json (including pa11y)
 
+      # --- IMPORTANT CHANGE HERE ---
       - name: Run Pa11y scan and save JSON
         id: run_pa11y # Assign an ID to this step to reference its outputs (if any)
-        run: node pa11y-wrapper.js "${{ env.PALLY_URL_TO_SCAN }}" > pa11y-results.json # <--- USES THE DYNAMIC URL
-        # Executes your Node.js wrapper, passing the dynamic target URL.
-        # The JSON output from pa11y-wrapper.js is redirected to 'pa11y-results.json'.
+        run: |
+          # Define PALLY_TARGET_URL as a shell variable WITHIN this step.
+          # This ensures the GitHub Actions expression is evaluated directly into the shell variable.
+          PALLY_TARGET_URL="${{ github.event.client_payload.url || github.event.inputs.url || 'https://www.google.com' }}"
+          
+          # Debugging: Print the URL to the GitHub Actions log
+          echo "DEBUG: Attempting to scan URL: $PALLY_TARGET_URL" 
+          
+          # Execute your Node.js wrapper, passing the dynamically determined URL.
+          node pa11y-wrapper.js "$PALLY_TARGET_URL" > pa11y-results.json
+        # No 'env' block needed specifically for PALLY_URL_TO_SCAN here anymore
 
       - name: Upload Pa11y raw JSON as artifact (optional)
         uses: actions/upload-artifact@v4 # Action to save artifacts from the workflow run
@@ -63,7 +73,7 @@ jobs:
           curl -X POST \
           -H "Content-Type: application/json" \
           --data-binary @pa11y-results.json \
-          "${{ env.N8N_WEBHOOK_URL_RECEIVE }}" # <--- USES THE DYNAMIC N8N RECEIVE URL
+          "${{ env.N8N_WEBHOOK_URL_RECEIVE }}" # <--- USES THE TOP-LEVEL ENV VARIABLE
         # Uses curl to send the content of 'pa11y-results.json' as a POST request
         # with JSON content type to your n8n webhook URL.
         # The '@' prefix makes curl read the data from the file.
