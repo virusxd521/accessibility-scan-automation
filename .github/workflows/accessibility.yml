@@ -1,9 +1,8 @@
-# .github/workflows/accessibility.yml
-# This workflow runs accessibility checks with Pa11y and sends the report to n8n for MongoDB storage and Slack notifications.
-
 name: Accessibility Scan & Report to MongoDB
 
 on:
+  repository_dispatch:
+    types: [trigger_pa11y_scan]
   push:
     branches:
       - main # Trigger on pushes to the main branch
@@ -13,16 +12,21 @@ on:
   schedule:
     - cron: '0 0 * * *' # Trigger daily at midnight UTC (e.g., for nightly scans)
   workflow_dispatch: # Allows manual triggering from the GitHub Actions tab
+    inputs: # Define inputs for manual runs (also handles workflow_dispatch data if used)
+      url:
+        description: 'URL to scan for accessibility issues'
+        required: true
+        default: 'https://www.google.com' # Provide a default for manual runs
 
 env:
   # The URL of your product/website that Pa11y will scan.
-  # IMPORTANT: Replace "https://your-product-url.com" with a real, public URL.
-  PALLY_URL_TO_SCAN: "https://broken-workshop.dequelabs.com" # Example, change this!
+  # It now dynamically uses the URL from repository_dispatch (client_payload) or workflow_dispatch (inputs).
+  # Fallback to a default if no URL is provided (e.g., from a push trigger).
+  PALLY_URL_TO_SCAN: ${{ github.event.client_payload.url || github.event.inputs.url || 'https://www.google.com' }} # <--- DYNAMIC URL HERE
 
-  # The webhook URL for your n8n workflow that will RECEIVE the Pa11y report.
-  # This will be an ngrok URL when running n8n locally.
-  # IMPORTANT: You will update this after setting up n8n and ngrok.
-  N8N_WEBHOOK_URL_RECEIVE: "http://localhost:5678/webhook/read-accessibility-reports" # Placeholder for now
+  # The webhook URL for your n8n workflow that will RECEIVE the Pa11y report (the 'ingestion' workflow).
+  # IMPORTANT: Replace with your current, active ngrok URL or deployed n8n URL.
+  N8N_WEBHOOK_URL_RECEIVE: "http://localhost:5678/webhook/read-accessibility-reports" # <--- VERIFY THIS IS YOUR LATEST NGROK URL
 
 jobs:
   accessibility-scan:
@@ -43,8 +47,8 @@ jobs:
 
       - name: Run Pa11y scan and save JSON
         id: run_pa11y # Assign an ID to this step to reference its outputs (if any)
-        run: node pa11y-wrapper.js "https://broken-workshop.dequelabs.com" > pa11y-results.json
-        # Executes your Node.js wrapper, passing the target URL.
+        run: node pa11y-wrapper.js "${{ env.PALLY_URL_TO_SCAN }}" > pa11y-results.json # <--- USES THE DYNAMIC URL
+        # Executes your Node.js wrapper, passing the dynamic target URL.
         # The JSON output from pa11y-wrapper.js is redirected to 'pa11y-results.json'.
 
       - name: Upload Pa11y raw JSON as artifact (optional)
@@ -59,7 +63,7 @@ jobs:
           curl -X POST \
           -H "Content-Type: application/json" \
           --data-binary @pa11y-results.json \
-          "https://27d8-2a00-a041-e569-1e00-39c3-4ce-f816-d51c.ngrok-free.app/webhook/receive-accessibility-report"
+          "${{ env.N8N_WEBHOOK_URL_RECEIVE }}" # <--- USES THE DYNAMIC N8N RECEIVE URL
         # Uses curl to send the content of 'pa11y-results.json' as a POST request
         # with JSON content type to your n8n webhook URL.
         # The '@' prefix makes curl read the data from the file.
