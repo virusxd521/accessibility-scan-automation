@@ -26,7 +26,7 @@ env:
 
   # The webhook URL for your n8n workflow that will RECEIVE the Pa11y report (the 'ingestion' workflow).
   # IMPORTANT: Replace with your current, active ngrok URL or deployed n8n URL.
-  N8N_WEBHOOK_URL_RECEIVE: "http://localhost:5678/webhook/receive-accessibility-report" # <--- VERIFY THIS IS YOUR LATEST NGROK URL
+  N8N_WEBHOOK_URL_RECEIVE: "https://27d8-2a00-a041-e569-1e00-39c3-4ce-f816-d51c.ngrok-free.app/webhook/receive-accessibility-report" # <--- VERIFY THIS IS YOUR LATEST NGROK URL
 
 jobs:
   accessibility-scan:
