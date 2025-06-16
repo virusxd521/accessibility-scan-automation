@@ -1,79 +1,73 @@
-# .github/workflows/accessibility.yml
-# This workflow runs accessibility checks with Pa11y and sends the report to n8n for MongoDB storage and Slack notifications.
-
 name: Accessibility Scan & Report to MongoDB
 
 on:
   # Allows triggering via API calls from external services (like n8n)
   repository_dispatch:
-    types: [trigger_pa11y_scan] # <--- THIS IS THE NEW TRIGGER TYPE. Must match event_type in n8n's GitHub node.
-
-  # Retaining existing triggers for flexibility (manual, push, pull_request, schedule)
+    types: [trigger_pa11y_scan]
   push:
     branches:
-      - main # Trigger on pushes to the main branch
+      - main
   pull_request:
     branches:
-      - main # Trigger on pull requests targeting the main branch
+      - main
   schedule:
-    - cron: '0 0 * * *' # Trigger daily at midnight UTC (e.g., for nightly scans)
-  workflow_dispatch: # Allows manual triggering from the GitHub Actions tab
-    inputs: # Define inputs for manual runs (also handles workflow_dispatch data if used)
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
       url:
         description: 'URL to scan for accessibility issues'
         required: true
-        default: 'https://www.google.com' # Provide a default for manual runs
+        default: 'https://broken-workshop.dequelabs.com'
+      title:
+        description: 'Accessibility report'
+        required: false
+        default: 'Accessibility report'
 
 env:
-  # This top-level env variable will now only hold the N8N webhook URL.
-  # The PALLY_URL will be defined directly within the step below.
-  N8N_WEBHOOK_URL_RECEIVE: "http://localhost:5678/webhook/receive-accessibility-report" # <--- VERIFY THIS IS YOUR LATEST NGROK URL FOR INGESTION
+  N8N_WEBHOOK_URL_RECEIVE: ${{ secrets.N8N_WEBHOOK_URL_RECEIVE }}
 
 jobs:
   accessibility-scan:
-    runs-on: ubuntu-latest # The type of virtual machine to run the job on
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4 # Action to clone your repository code
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4 # Action to set up Node.js environment
+        uses: actions/setup-node@v4
         with:
-          node-version: '18' # Specify Node.js version 18
+          node-version: '18'
 
       - name: Install Node.js dependencies
         run: |
           npm install # Installs dependencies from package.json (including pa11y)
 
-      # --- IMPORTANT CHANGE HERE ---
       - name: Run Pa11y scan and save JSON
-        id: run_pa11y # Assign an ID to this step to reference its outputs (if any)
+        id: run_pa11y
         run: |
-          # Define PALLY_TARGET_URL as a shell variable WITHIN this step.
-          # This ensures the GitHub Actions expression is evaluated directly into the shell variable.
+          # Define PALLY_TARGET_URL from the trigger payload or default
           PALLY_TARGET_URL="${{ github.event.client_payload.url || github.event.inputs.url || 'https://www.google.com' }}"
+          # Define PALLY_TARGET_TITLE from the trigger payload or default
+          PALLY_TARGET_TITLE="${{ github.event.client_payload.title || github.event.inputs.title || '' }}"
           
-          # Debugging: Print the URL to the GitHub Actions log
+          # Debugging: Print the URL and Title to the GitHub Actions log
           echo "DEBUG: Attempting to scan URL: $PALLY_TARGET_URL" 
+          echo "DEBUG: Using custom title: $PALLY_TARGET_TITLE"
           
-          # Execute your Node.js wrapper, passing the dynamically determined URL.
-          node pa11y-wrapper.js "$PALLY_TARGET_URL" > pa11y-results.json
-        # No 'env' block needed specifically for PALLY_URL_TO_SCAN here anymore
+          # Execute your Node.js wrapper, passing the dynamically determined URL and Title.
+          node pa11y-wrapper.js "$PALLY_TARGET_URL" "$PALLY_TARGET_TITLE" > pa11y-results.json
 
       - name: Upload Pa11y raw JSON as artifact (optional)
-        uses: actions/upload-artifact@v4 # Action to save artifacts from the workflow run
+        uses: actions/upload-artifact@v4
         with:
           name: pa11y-raw-json
           path: pa11y-results.json
-          retention-days: 7 # How long to keep this artifact (for debugging/history)
+          retention-days: 7
 
       - name: Send Pa11y JSON report to n8n
         run: |
           curl -X POST \
           -H "Content-Type: application/json" \
           --data-binary @pa11y-results.json \
-          "${{ env.N8N_WEBHOOK_URL_RECEIVE }}" # <--- USES THE TOP-LEVEL ENV VARIABLE
-        # Uses curl to send the content of 'pa11y-results.json' as a POST request
-        # with JSON content type to your n8n webhook URL.
-        # The '@' prefix makes curl read the data from the file.
+          "${{ env.N8N_WEBHOOK_URL_RECEIVE }}" # <--- THIS NOW USES THE SECRET VIA ENV
