@@ -27,7 +27,7 @@ on:
 env:
   # This top-level env variable will now only hold the N8N webhook URL.
   # The PALLY_URL will be defined directly within the step below.
-  N8N_WEBHOOK_URL_RECEIVE: "https://27d8-2a00-a041-e569-1e00-39c3-4ce-f816-d51c.ngrok-free.app/webhook/receive-accessibility-report" # <--- VERIFY THIS IS YOUR LATEST NGROK URL FOR INGESTION
+  N8N_WEBHOOK_URL_RECEIVE: "http://localhost:5678/webhook/receive-accessibility-report" # <--- VERIFY THIS IS YOUR LATEST NGROK URL FOR INGESTION
 
 jobs:
   accessibility-scan:
