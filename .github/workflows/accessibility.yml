@@ -24,7 +24,7 @@ on:
         default: 'Accessibility report'
 
 env:
-  N8N_WEBHOOK_URL_RECEIVE: ${{ secrets.N8N_WEBHOOK_URL_RECEIVE }}
+  N8N_WEBHOOK_URL_RECEIVE: ${{ secrets.N8N_WEBHOOK_URL_RECEIVE_LINA || secrets.N8N_WEBHOOK_URL_RECEIVE_MOHANNED || secrets.N8N_WEBHOOK_URL_RECEIVE_DANIEL }}
 
 jobs:
   accessibility-scan:
